@@ -72,6 +72,7 @@ class Gem::GemPathSearcher
   # Some of the intermediate results are cached in @lib_dirs for speed.
 
   def matching_files(spec, path)
+    return [] unless @lib_dirs[spec.object_id] # case no paths
     glob = File.join @lib_dirs[spec.object_id], "#{path}#{Gem.suffix_pattern}"
     Dir[glob].select { |f| File.file? f.untaint }
   end
@@ -95,7 +96,7 @@ class Gem::GemPathSearcher
   #   '/usr/local/lib/ruby/gems/1.8/gems/foobar-1.0/{lib,ext}'
 
   def lib_dirs_for(spec)
-    "#{spec.full_gem_path}/{#{spec.require_paths.join(',')}}"
+    "#{spec.full_gem_path}/{#{spec.require_paths.join(',')}}" if spec.require_paths
   end
 
 end

@@ -31,6 +31,15 @@ class TestGemGemPathSearcher < RubyGemTestCase
     @gps = Gem::GemPathSearcher.new
   end
 
+  def test_dirs_works_without_lib_dirs
+    gem = quick_gem 'foo', '0.1' do |s|
+      s.require_paths << 'lib2'
+    end
+    gem.require_paths = nil
+    refute @gps.lib_dirs_for(gem)
+    refute @gps.matching_file?(gem, 'foo')
+  end
+
   def test_find
     assert_equal @foo1, @gps.find('foo')
   end
