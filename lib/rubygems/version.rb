@@ -283,6 +283,8 @@ module Gem
 
     def <=> other
       return   1 unless other # HACK: comparable with nil? why?
+      return   1 unless other.segments
+
       return nil unless self.class === other
 
       # This method's motto: Object allocation is for suckers. This
