@@ -89,7 +89,7 @@ class Gem::DependencyInstaller
 
     if @domain == :both or @domain == :remote then
       begin
-      	if dep.requirements
+      	if dep.requirement
           requirements = dep.requirement.requirements.map do |req, ver|
             req
           end
