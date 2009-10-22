@@ -89,8 +89,12 @@ class Gem::DependencyInstaller
 
     if @domain == :both or @domain == :remote then
       begin
-        requirements = dep.requirement.requirements.map do |req, ver|
-          req
+      	if dep.requirements
+          requirements = dep.requirement.requirements.map do |req, ver|
+            req
+          end
+        else
+        	requirements = []
         end
 
         all = !@prerelease && (requirements.length > 1 ||
