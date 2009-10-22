@@ -64,7 +64,7 @@ class Gem::Dependency
   end
 
   def requirements_list
-    requirement.as_list
+    requirement.as_list rescue []
   end
 
   def to_s # :nodoc:
@@ -133,6 +133,6 @@ class Gem::Dependency
 
     version = reqs.first.last
 
-    requirement.satisfied_by? version
+    requirement.satisfied_by? version if requirement
   end
 end
