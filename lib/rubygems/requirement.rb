@@ -70,7 +70,7 @@ class Gem::Requirement
     return ["=", obj] if Gem::Version === obj
 
     unless PATTERN =~ obj.to_s
-      raise ArgumentError, "Illformed requirement [#{obj.inspect}]"
+# disabled for now [sigh]      raise ArgumentError, "Illformed requirement [#{obj.inspect}]"
     end
 
     [$1 || "=", Gem::Version.new($2)]
