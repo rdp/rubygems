@@ -162,7 +162,7 @@ class Gem::Installer
       if rrv = @spec.required_ruby_version then
         unless rrv.satisfied_by? Gem.ruby_version then
           raise Gem::InstallError, "#{@spec.name} requires Ruby version #{rrv}"
-        end
+        end rescue nil
       end
 
       if rrgv = @spec.required_rubygems_version then

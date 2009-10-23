@@ -1037,7 +1037,7 @@ class Gem::Specification
     when true, false, nil  then obj.inspect
     when Gem::Platform     then "Gem::Platform.new(#{obj.to_a.inspect})"
     when Gem::Requirement  then "Gem::Requirement.new(#{obj.to_s.inspect})"
-    else raise Gem::Exception, "ruby_code case not handled: #{obj.class}"
+    else raise Gem::Exception, "ruby_code case not handled: #{obj.class}" unless obj.to_s.include? 'YAML'
     end
   end
 
