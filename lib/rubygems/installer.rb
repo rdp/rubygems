@@ -29,12 +29,6 @@ require 'rubygems/require_paths_builder'
 class Gem::Installer
 
   ##
-  # Paths where env(1) might live.  Some systems are broken and have it in
-  # /bin
-
-  ENV_PATHS = %w[/usr/bin/env /bin/env]
-
-  ##
   # Raised when there is an error while building extensions.
   #
   class ExtensionBuildError < Gem::InstallError; end
@@ -58,9 +52,15 @@ class Gem::Installer
 
   attr_reader :spec
 
+  @home_install_warning = false
   @path_warning = false
 
   class << self
+
+    ##
+    # True if we've warned about ~/.gems install
+
+    attr_accessor :home_install_warning
 
     ##
     # True if we've warned about PATH not including Gem.bindir
@@ -121,6 +121,27 @@ class Gem::Installer
       raise Gem::InstallError, "invalid gem format for #{@gem}"
     end
 
+    begin
+      FileUtils.mkdir_p @gem_home
+    rescue Errno::EACCES, Errno::ENOTDIR
+      # We'll divert to ~/.gems below
+    end
+
+    if not File.writable? @gem_home or
+        # TODO: Shouldn't have to test for existence of bindir; tests need it.
+        (@gem_home.to_s == Gem.dir and File.exist? Gem.bindir and
+         not File.writable? Gem.bindir) then
+      if options[:user_install] == false then # You don't want to use ~
+        raise Gem::FilePermissionError, @gem_home
+      elsif options[:user_install].nil? then
+        unless self.class.home_install_warning or options[:unpack] then
+          alert_warning "Installing to ~/.gem since #{@gem_home} and\n\t  #{Gem.bindir} aren't both writable."
+          self.class.home_install_warning = true
+        end
+      end
+      options[:user_install] = true
+    end
+
     if options[:user_install] and not options[:unpack] then
       @gem_home = Gem.user_dir
 
@@ -131,10 +152,11 @@ class Gem::Installer
           self.class.path_warning = true
         end
       end
-    end
 
-    FileUtils.mkdir_p @gem_home
-    raise Gem::FilePermissionError, @gem_home unless File.writable? @gem_home
+      FileUtils.mkdir_p @gem_home unless File.directory? @gem_home
+      # If it's still not writable, you've got issues.
+      raise Gem::FilePermissionError, @gem_home unless File.writable? @gem_home
+    end
 
     @spec = @format.spec
 
@@ -207,7 +229,8 @@ class Gem::Installer
 
     say @spec.post_install_message unless @spec.post_install_message.nil?
 
-    @spec.loaded_from = File.join(@gem_home, 'specifications', @spec.spec_name)
+    @spec.loaded_from = File.join(@gem_home, 'specifications',
+                                  "#{@spec.full_name}.gemspec")
 
     @source_index.add_spec @spec
 
@@ -258,7 +281,8 @@ class Gem::Installer
   def write_spec
     rubycode = @spec.to_ruby
 
-    file_name = File.join @gem_home, 'specifications', @spec.spec_name
+    file_name = File.join @gem_home, 'specifications',
+                          "#{@spec.full_name}.gemspec"
 
     file_name.untaint
 
@@ -368,25 +392,23 @@ class Gem::Installer
   # necessary.
 
   def shebang(bin_file_name)
-    ruby_name = Gem::ConfigMap[:ruby_install_name] if @env_shebang
-    path = File.join @gem_dir, @spec.bindir, bin_file_name
-    first_line = File.open(path, "rb") {|file| file.gets}
-
-    if /\A#!/ =~ first_line then
-      # Preserve extra words on shebang line, like "-w".  Thanks RPA.
-      shebang = first_line.sub(/\A\#!.*?ruby\S*(?=(\s+\S+))/, "#!#{Gem.ruby}")
-      opts = $1
-      shebang.strip! # Avoid nasty ^M issues.
-    end
-
-    if not ruby_name then
-      "#!#{Gem.ruby}#{opts}"
-    elsif opts then
-      "#!/bin/sh\n'exec' #{ruby_name.dump} '-x' \"$0\" \"$@\"\n#{shebang}"
+    if @env_shebang then
+      "#!/usr/bin/env " + Gem::ConfigMap[:ruby_install_name]
     else
-      # Create a plain shebang line.
-      @env_path ||= ENV_PATHS.find {|env_path| File.executable? env_path }
-      "#!#{@env_path} #{ruby_name}"
+      path = File.join @gem_dir, @spec.bindir, bin_file_name
+
+      File.open(path, "rb") do |file|
+        first_line = file.gets
+        if first_line =~ /^#!/ then
+          # Preserve extra words on shebang line, like "-w".  Thanks RPA.
+          shebang = first_line.sub(/\A\#!.*?ruby\S*/, "#!#{Gem.ruby}")
+        else
+          # Create a plain shebang line.
+          shebang = "#!#{Gem.ruby}"
+        end
+
+        shebang.strip # Avoid nasty ^M issues.
+      end
     end
   end
 

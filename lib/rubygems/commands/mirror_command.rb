@@ -51,7 +51,7 @@ Multiple sources and destinations may be specified.
         Dir.mkdir gems_dir
       end
 
-      source_index_data = ''
+      sourceindex_data = ''
 
       say "fetching: #{get_from}/Marshal.#{Gem.marshal_version}.Z"
 
@@ -70,18 +70,18 @@ Multiple sources and destinations may be specified.
       end
 
       open File.join(get_from.to_s, "Marshal.#{Gem.marshal_version}.Z"), "rb" do |y|
-        source_index_data = Zlib::Inflate.inflate y.read
+        sourceindex_data = Zlib::Inflate.inflate y.read
         open File.join(save_to, "Marshal.#{Gem.marshal_version}"), "wb" do |out|
-          out.write source_index_data
+          out.write sourceindex_data
         end
       end
 
-      source_index = Marshal.load source_index_data
+      sourceindex = Marshal.load(sourceindex_data)
 
-      progress = ui.progress_reporter source_index.size,
-                                      "Fetching #{source_index.size} gems"
-      source_index.each do |fullname, gem|
-        gem_file = gem.file_name
+      progress = ui.progress_reporter sourceindex.size,
+                                      "Fetching #{sourceindex.size} gems"
+      sourceindex.each do |fullname, gem|
+        gem_file = "#{fullname}.gem"
         gem_dest = File.join gems_dir, gem_file
 
         unless File.exist? gem_dest then

@@ -11,7 +11,6 @@
 class Gem::Builder
 
   include Gem::UserInteraction
-
   ##
   # Constructs a builder instance for the provided specification
   #
@@ -34,7 +33,7 @@ class Gem::Builder
     @spec.validate
     @signer = sign
     write_package
-    say success if Gem.configuration.verbose
+    say success
     @spec.file_name
   end
 
@@ -43,7 +42,7 @@ class Gem::Builder
   Successfully built RubyGem
   Name: #{@spec.name}
   Version: #{@spec.version}
-  File: #{@spec.file_name}
+  File: #{@spec.full_name+'.gem'}
 EOM
   end
 
@@ -87,6 +86,5 @@ EOM
       end
     end
   end
-
 end
 

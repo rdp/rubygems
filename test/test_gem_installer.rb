@@ -516,7 +516,7 @@ load Gem.bin_path('a', 'my_exec', version)
 
     @installer.generate_bin
 
-    default_shebang = Gem.ruby
+    default_shebang = File.join(Config::CONFIG['bindir'], Config::CONFIG['ruby_install_name'])
     shebang_line = open("#{@gemhome}/bin/my_exec") { |f| f.readlines.first }
     assert_match(/\A#!/, shebang_line)
     assert_match(/#{default_shebang}/, shebang_line)
@@ -524,11 +524,11 @@ load Gem.bin_path('a', 'my_exec', version)
 
   def test_initialize
     spec = quick_gem 'a' do |s| s.platform = Gem::Platform.new 'mswin32' end
-    gem = File.join @tempdir, spec.file_name
+    gem = File.join @tempdir, "#{spec.full_name}.gem"
 
     Dir.mkdir util_inst_bindir
     util_build_gem spec
-    FileUtils.mv File.join(@gemhome, 'cache', spec.file_name),
+    FileUtils.mv File.join(@gemhome, 'cache', "#{spec.full_name}.gem"),
                  @tempdir
 
     installer = Gem::Installer.new gem
@@ -540,7 +540,7 @@ load Gem.bin_path('a', 'my_exec', version)
     Dir.mkdir util_inst_bindir
     util_setup_gem
 
-    cache_file = File.join @gemhome, 'cache', @spec.file_name
+    cache_file = File.join @gemhome, 'cache', "#{@spec.full_name}.gem"
 
     Gem.pre_install do |installer|
       refute File.exist?(cache_file), 'cache file should not exist yet'
@@ -568,7 +568,8 @@ load Gem.bin_path('a', 'my_exec', version)
 
     assert File.exist?(File.join(gemdir, 'ext', 'a', 'Rakefile'))
 
-    spec_file = File.join(@gemhome, 'specifications', @spec.spec_name)
+    spec_file = File.join(@gemhome, 'specifications',
+                          "#{@spec.full_name}.gemspec")
 
     assert_equal spec_file, @spec.loaded_from
     assert File.exist?(spec_file)
@@ -582,7 +583,7 @@ load Gem.bin_path('a', 'my_exec', version)
 
     use_ui @ui do
       Dir.chdir @tempdir do Gem::Builder.new(@spec).build end
-      gem = File.join @tempdir, @spec.file_name
+      gem = File.join @tempdir, "#{@spec.full_name}.gem"
     end
 
     gem_data = File.open gem, 'rb' do |fp| fp.read 1024 end
@@ -665,7 +666,8 @@ load Gem.bin_path('a', 'my_exec', version)
     assert_equal 0111, exe_mode, "0%o" % exe_mode unless win_platform?
     assert File.exist?(File.join(gemdir, 'lib', 'code.rb'))
 
-    assert File.exist?(File.join(@gemhome, 'specifications', @spec.spec_name))
+    assert File.exist?(File.join(@gemhome, 'specifications',
+                                 "#{@spec.full_name}.gemspec"))
   end
 
   def test_install_missing_dirs
@@ -675,7 +677,7 @@ load Gem.bin_path('a', 'my_exec', version)
 
     use_ui @ui do
       Dir.chdir @tempdir do Gem::Builder.new(@spec).build end
-      gem = File.join @tempdir, @spec.file_name
+      gem = File.join @tempdir, "#{@spec.full_name}.gem"
 
       @installer.install
     end
@@ -684,8 +686,50 @@ load Gem.bin_path('a', 'my_exec', version)
     File.directory? File.join(Gem.dir, 'docs')
     File.directory? File.join(Gem.dir, 'specifications')
 
-    assert File.exist?(File.join(@gemhome, 'cache', @spec.file_name))
-    assert File.exist?(File.join(@gemhome, 'specifications', @spec.spec_name))
+    assert File.exist?(File.join(@gemhome, 'cache', "#{@spec.full_name}.gem"))
+    assert File.exist?(File.join(@gemhome, 'specifications',
+                                 "#{@spec.full_name}.gemspec"))
+  end
+
+  unless win_platform? # File.chmod doesn't work
+    def test_install_user_local_fallback
+      Dir.mkdir util_inst_bindir
+      File.chmod 0755, @userhome
+      File.chmod 0000, util_inst_bindir
+      File.chmod 0000, Gem.dir
+      @spec.executables = ["executable"]
+
+      build_rake_in do
+        use_ui @ui do
+          util_setup_gem
+          @installer.install
+        end
+      end
+
+      assert File.exist?(File.join(Gem.user_dir, 'gems',
+                                   @spec.full_name, 'lib', 'code.rb'))
+      assert File.exist?(File.join(Gem.user_dir, 'bin', 'executable'))
+    ensure
+      File.chmod 0755, Gem.dir
+      File.chmod 0755, util_inst_bindir
+    end
+
+    def test_install_bindir_read_only
+      Dir.mkdir util_inst_bindir
+      File.chmod 0755, @userhome
+      File.chmod 0000, util_inst_bindir
+
+      build_rake_in do
+        use_ui @ui do
+          util_setup_gem
+          @installer.install
+        end
+      end
+
+      assert File.exist?(File.join(Gem.user_dir, 'bin', 'executable'))
+    ensure
+      File.chmod 0755, util_inst_bindir
+    end
   end
 
   def test_install_with_message
@@ -718,7 +762,7 @@ load Gem.bin_path('a', 'my_exec', version)
 
     util_build_gem spec
 
-    gem = File.join @gemhome, 'cache', spec.file_name
+    gem = File.join @gemhome, 'cache', "#{spec.full_name}.gem"
 
     use_ui @ui do
       @installer = Gem::Installer.new gem
@@ -846,7 +890,7 @@ load Gem.bin_path('a', 'my_exec', version)
 
   def test_write_spec
     spec_dir = File.join @gemhome, 'specifications'
-    spec_file = File.join spec_dir, @spec.spec_name
+    spec_file = File.join spec_dir, "#{@spec.full_name}.gemspec"
     FileUtils.rm spec_file
     refute File.exist?(spec_file)
 
@@ -866,7 +910,7 @@ load Gem.bin_path('a', 'my_exec', version)
 
     util_build_gem spec
 
-    File.join @gemhome, 'cache', spec.file_name
+    File.join @gemhome, 'cache', "#{spec.full_name}.gem"
   end
 
 end

@@ -17,7 +17,7 @@ class Date; end # for ruby_code if date.rb wasn't required
 # defined in a .gemspec file or a Rakefile, and looks like this:
 #
 #   spec = Gem::Specification.new do |s|
-#     s.name = 'example'
+#     s.name = 'rfoo'
 #     s.version = '1.0'
 #     s.summary = 'Example gem specification'
 #     ...
@@ -598,12 +598,10 @@ class Gem::Specification
   end
 
   ##
-  # The default (generated) file name of the gem.  See also #spec_name.
-  #
-  #   spec.file_name # => "example-1.0.gem"
+  # The default (generated) file name of the gem.
 
   def file_name
-    full_name + '.gem'
+    full_name + ".gem"
   end
 
   ##
@@ -630,15 +628,6 @@ class Gem::Specification
 
   def sort_obj
     [@name, @version, @new_platform == Gem::Platform::RUBY ? -1 : 1]
-  end
-
-  ##
-  # The default name of the gemspec.  See also #file_name
-  #
-  #   spec.spec_name # => "example-1.0.gemspec"
-
-  def spec_name
-    full_name + '.gemspec'
   end
 
   def <=>(other) # :nodoc:

@@ -253,18 +253,18 @@ class Gem::SourceIndex
   # change in the index.
 
   def index_signature
-    require 'digest'
+    require 'rubygems/digest/sha2'
 
-    Digest::SHA256.new.hexdigest(@gems.keys.sort.join(',')).to_s
+    Gem::SHA256.new.hexdigest(@gems.keys.sort.join(',')).to_s
   end
 
   ##
   # The signature for the given gem specification.
 
   def gem_signature(gem_full_name)
-    require 'digest'
+    require 'rubygems/digest/sha2'
 
-    Digest::SHA256.new.hexdigest(@gems[gem_full_name].to_yaml).to_s
+    Gem::SHA256.new.hexdigest(@gems[gem_full_name].to_yaml).to_s
   end
 
   def size

@@ -97,26 +97,21 @@ class Gem::PackageTask < Rake::PackageTask
 
   def define
     super
-
     task :package => [:gem]
-
-    gem_file = gem_spec.file_name
-    gem_path = File.join package_dir, gem_file
-
     desc "Build the gem file #{gem_file}"
-    task :gem => [gem_path]
-
-    trace = Rake.application.options.trace
-    Gem.configuration.verbose = trace
-
-    file gem_path => [package_dir] + @gem_spec.files do
-      when_writing "Creating #{gem_spec.file_name}" do
+    task :gem => ["#{package_dir}/#{gem_file}"]
+    file "#{package_dir}/#{gem_file}" => [package_dir] + @gem_spec.files do
+      when_writing("Creating #{gem_spec.full_name}.gem") {
         Gem::Builder.new(gem_spec).build
-        verbose trace do
-          mv gem_file, gem_path
-        end
-      end
+        verbose(true) {
+          mv gem_file, "#{package_dir}/#{gem_file}"
+        }
+      }
     end
+  end
+
+  def gem_file
+    "#{@gem_spec.full_name}.gem"
   end
 
 end

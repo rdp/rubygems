@@ -202,7 +202,7 @@ class Gem::Uninstaller
       spec.name, spec.version, spec.original_platform].join '-'
 
     spec_dir = File.join spec.installation_path, 'specifications'
-    gemspec = File.join spec_dir, spec.spec_name
+    gemspec = File.join spec_dir, "#{spec.full_name}.gemspec"
 
     unless File.exist? gemspec then
       gemspec = File.join spec_dir, "#{original_platform_name}.gemspec"
@@ -211,7 +211,7 @@ class Gem::Uninstaller
     FileUtils.rm_rf gemspec
 
     cache_dir = File.join spec.installation_path, 'cache'
-    gem = File.join cache_dir, spec.file_name
+    gem = File.join cache_dir, "#{spec.full_name}.gem"
 
     unless File.exist? gem then
       gem = File.join cache_dir, "#{original_platform_name}.gem"

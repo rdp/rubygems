@@ -9,6 +9,7 @@ require 'stringio'
 require 'yaml'
 require 'zlib'
 
+require 'rubygems/digest/md5'
 require 'rubygems/security'
 require 'rubygems/specification'
 

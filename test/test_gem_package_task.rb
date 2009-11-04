@@ -35,6 +35,7 @@ class TestGemPackageTask < MiniTest::Unit::TestCase
       p.package_files << "y"
     end
     assert_equal ["x", "y"], pkg.package_files
+    assert_equal "pkgr-1.2.3.gem", pkg.gem_file
   end
 
   def test_gem_package_with_current_platform
@@ -48,6 +49,7 @@ class TestGemPackageTask < MiniTest::Unit::TestCase
       p.package_files << "y"
     end
     assert_equal ["x", "y"], pkg.package_files
+    assert_match(/^pkgr-1\.2\.3-(\S+)\.gem$/, pkg.gem_file)
   end
 
   def test_gem_package_with_ruby_platform
@@ -61,6 +63,7 @@ class TestGemPackageTask < MiniTest::Unit::TestCase
       p.package_files << "y"
     end
     assert_equal ["x", "y"], pkg.package_files
+    assert_equal "pkgr-1.2.3.gem", pkg.gem_file
   end
 
 end

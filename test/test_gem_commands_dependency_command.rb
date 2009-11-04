@@ -173,7 +173,8 @@ ERROR:  Only reverse dependencies for local gems are supported.
 
     util_setup_spec_fetcher foo
 
-    FileUtils.rm File.join(@gemhome, 'specifications', foo.spec_name)
+    FileUtils.rm File.join(@gemhome, 'specifications',
+                           "#{foo.full_name}.gemspec")
 
     @cmd.options[:args] = %w[foo]
     @cmd.options[:domain] = :remote
@@ -184,6 +185,45 @@ ERROR:  Only reverse dependencies for local gems are supported.
 
     assert_equal "Gem foo-2\n  bar (> 1, runtime)\n\n", @ui.output
     assert_equal '', @ui.error
+  end
+
+  def test_execute_remote_legacy
+    foo = quick_gem 'foo' do |gem|
+      gem.add_dependency 'bar', '> 1'
+    end
+
+    @fetcher = Gem::FakeFetcher.new
+    Gem::RemoteFetcher.fetcher = @fetcher
+
+    Gem::SpecFetcher.fetcher = nil
+    si = util_setup_source_info_cache foo
+
+    @fetcher.data["#{@gem_repo}yaml"] = YAML.dump si
+    @fetcher.data["#{@gem_repo}Marshal.#{Gem.marshal_version}"] =
+      si.dump
+
+    @fetcher.data.delete "#{@gem_repo}latest_specs.#{Gem.marshal_version}.gz"
+
+    FileUtils.rm File.join(@gemhome, 'specifications',
+                           "#{foo.full_name}.gemspec")
+
+    @cmd.options[:args] = %w[foo]
+    @cmd.options[:domain] = :remote
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal "Gem foo-2\n  bar (> 1, runtime)\n\n", @ui.output
+
+    expected = <<-EOF
+WARNING:  RubyGems 1.2+ index not found for:
+\t#{@gem_repo}
+
+RubyGems will revert to legacy indexes degrading performance.
+    EOF
+
+    assert_equal expected, @ui.error
   end
 
 end
