@@ -60,7 +60,8 @@ class Gem::Dependency
 
   def version_requirements
     normalize if defined? @version_requirement and @version_requirement
-    @version_requirements
+    
+    @version_requirements ||  Gem::Requirement.create( [] )
   end
 
   def requirement_list
